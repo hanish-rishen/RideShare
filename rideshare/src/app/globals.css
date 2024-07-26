@@ -67,3 +67,24 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* styles/globals.css or appropriate CSS file */
+
+@media (max-width: 768px) {
+  .relative.hidden.h-full.flex-col.bg-muted.p-10.text-black.dark\\:border-r.lg\\:flex {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-muted);
+    padding: 20px;
+  }
+
+  .relative.hidden.h-full.flex-col.bg-muted.p-10.text-black.dark\\:border-r.lg\\:flex iframe {
+    position: relative;
+    width: 100%;
+    height: auto;
+    max-height: 300px;
+    border: none;
+  }
+}
