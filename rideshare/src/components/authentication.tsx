@@ -30,7 +30,7 @@ export default function AuthenticationPage() {
         <div className="relative hidden h-full flex-col bg-muted p-10 text-black dark:border-r lg:flex">
         <div className="flex items-center justify-center w-full h-full">
   <iframe
-    src="https://lottie.host/embed/d17867e5-11e3-4fe9-8b85-d189015fb49e/MNQU47uUiX.json"
+    src="https://lottie.host/embed/5ad493df-451a-4d69-94ae-a156191cd5c4/kpPkwmNZrT.json"
     className="w-[500px] h-[500px] border-0"
     allowFullScreen
   />
