@@ -19,9 +19,9 @@ export function Details() {
   const [locations, setLocations] = useState<{ latitude: number; longitude: number; user_id: string }[]>([]);
   const [users, setUsers] = useState<{ user_id: string; username: string }[]>([]);
   const [matches, setMatches] = useState<{ user_id: string; latitude: number; longitude: number; username: string; distance: number }[]>([]);
-  const [showForm, setShowForm] = useState(true); // State to control form display
-  const [recentLocations, setRecentLocations] = useState<string[]>([]); // State to store recent locations
-  const [filteredLocations, setFilteredLocations] = useState<string[]>([]); // State to store filtered suggestions
+  const [showForm, setShowForm] = useState(true);
+  const [recentLocations, setRecentLocations] = useState<string[]>([]);
+  const [filteredLocations, setFilteredLocations] = useState<string[]>([]);
   const { user } = useUser();
   const router = useRouter();
 
@@ -67,16 +67,16 @@ export function Details() {
       if (error) {
         setError(error.message);
       } else {
-        fetchLocations(); // Fetch locations after successful insertion
-        setShowForm(false); // Hide the form after successful submission
         updateRecentLocations(startLocation);
         updateRecentLocations(endLocation);
+        setShowForm(false);
       }
     } catch (error) {
       setError((error as Error).message);
     }
 
-    setLoading(false);
+    // Introduce a delay of 2.5 seconds before setting loading to false
+    setTimeout(() => setLoading(false), 500);
   };
 
   const handleLogout = async () => {
@@ -86,7 +86,6 @@ export function Details() {
 
   const fetchLocations = async () => {
     try {
-      // Fetch locations from rideshare table
       const { data: locationsData, error: locationsError } = await supabase
         .from('rideshare')
         .select('latitude, longitude, user_id, start_time')
@@ -99,7 +98,6 @@ export function Details() {
 
       setLocations(locationsData || []);
 
-      // Fetch usernames from users table
       const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select('user_id, username');
@@ -110,15 +108,12 @@ export function Details() {
       }
 
       setUsers(usersData || []);
-
-      // Find matches after fetching locations and users
-      findMatches(locationsData || [], usersData || []);
     } catch (error) {
       console.error("Error fetching data:", (error as Error).message);
     }
   };
 
-  const findMatches = (locations: { latitude: number; longitude: number; user_id: string }[], users: { user_id: string; username: string }[]) => {
+  const findMatches = () => {
     if (!user) return;
 
     const R = 6371; // Radius of the Earth in kilometers
@@ -142,13 +137,9 @@ export function Details() {
 
     const { latitude, longitude } = currentUserLocation;
 
-    console.log(`Current user location: (${latitude}, ${longitude})`);
-
-    // Find nearby users and include their usernames and distances
     const nearbyUsers = locations.filter(location => {
       if (location.user_id === user.id) return false;
       const distance = getDistance(latitude, longitude, location.latitude, location.longitude);
-      console.log(`Distance to user ${location.user_id}: ${distance} km`);
       return distance <= thresholdDistance;
     }).map(location => {
       const user = users.find(user => user.user_id === location.user_id);
@@ -160,14 +151,13 @@ export function Details() {
       };
     });
 
-    console.log("Nearby users:", nearbyUsers);
     setMatches(nearbyUsers);
   };
 
   const updateRecentLocations = (location: string) => {
     setRecentLocations(prevLocations => {
       const updatedLocations = [location, ...prevLocations.filter(loc => loc !== location)];
-      if (updatedLocations.length > 5) updatedLocations.pop(); // Keep the last 5 locations
+      if (updatedLocations.length > 5) updatedLocations.pop();
       return updatedLocations;
     });
   };
@@ -189,6 +179,12 @@ export function Details() {
     }
   }, [showForm]);
 
+  useEffect(() => {
+    if (!showForm) {
+      findMatches();
+    }
+  }, [locations, users, showForm]);
+
   return (
     <div className="relative flex items-center justify-center h-screen w-screen px-4 bg-gray-100">
       <Card className="w-full max-w-4xl h-full max-h-[90vh] flex flex-col md:flex-row bg-white shadow-lg rounded-lg overflow-hidden">
@@ -202,7 +198,11 @@ export function Details() {
               <CardDescription className="text-gray-600">Get your ride in one-click.</CardDescription>
             </CardHeader>
             <CardContent className="flex-grow flex flex-col justify-between">
-              {showForm ? (
+              {loading ? (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-gray-600">Loading...</p>
+                </div>
+              ) : showForm ? (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   {error && <p className="text-red-500">{error}</p>}
                   <div className="relative flex flex-col space-y-1.5">
@@ -255,41 +255,36 @@ export function Details() {
                     <Label htmlFor="phone_number" className="text-gray-700">Phone Number</Label>
                     <Input
                       id="phone_number"
-                      placeholder="Your Phone Number"
+                      type="tel"
+                      placeholder="Your phone number"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       required
                     />
                   </div>
-                  <div className="flex space-x-4">
-                    <Button type="submit" disabled={loading} className="text-white">
-                      {loading ? 'Submitting...' : 'Find Ride'}
-                    </Button>
-                    <Button onClick={handleLogout} className="bg-red-500 text-white">
-                      Logout
-                    </Button>
-                  </div>
+                  <Button type="submit" disabled={loading} className="w-full">Find Ride</Button>
                 </form>
               ) : (
-                <div className="flex-grow overflow-auto">
+                <>
                   {matches.length > 0 ? (
-                    <ul className="divide-y divide-gray-200">
+                    <div className="space-y-4">
                       {matches.map((match, index) => (
-                        <li key={index} className="py-4 px-2 flex justify-between items-center text-sm md:text-base">
-                          <div className="flex flex-col">
-                            <span className="font-semibold">{match.username}</span>
-                            <span>{match.latitude}, {match.longitude}</span>
-                            <span>{match.distance.toFixed(2)} km</span>
-                          </div>
-                        </li>
+                        <Card key={index} className="p-4 bg-gray-200 border border-gray-300 rounded-md shadow-md">
+                          <CardHeader>
+                            <CardTitle className="text-lg font-bold text-gray-800">{match.username}</CardTitle>
+                            <CardDescription className="text-gray-600">Distance: {match.distance.toFixed(2)} km</CardDescription>
+                          </CardHeader>
+                        </Card>
                       ))}
-                    </ul>
+                      <Button className="w-full mt-4" onClick={() => setShowForm(true)}>New Ride</Button>
+                    </div>
                   ) : (
                     <p className="text-gray-600">No nearby rides found.</p>
                   )}
-                </div>
+                </>
               )}
             </CardContent>
+            <Button onClick={handleLogout} className="mt-4">Logout</Button>
           </div>
         </div>
       </Card>
