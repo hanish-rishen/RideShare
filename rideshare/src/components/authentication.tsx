@@ -28,7 +28,7 @@ export default function AuthenticationPage() {
       </div>
       <div className="container relative flex h-full flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
         <div className="relative hidden h-full flex-col bg-muted p-10 text-black dark:border-r lg:flex">
-          <div className="relative z-20 flex items-center text-lg font-medium">
+          <div className="relative z-20 flex items-center text-2xl font-semibold">
             RideShare.
           </div>
           <div className="flex items-center justify-center w-full h-full">

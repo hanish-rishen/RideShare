@@ -9,10 +9,10 @@ import { supabase } from "@/lib/supabaseClient";
 import { useUser } from "@/lib/hooks/useUser";
 import Map from "@/components/Map";
 
-
 export function Details() {
   const [startLocation, setStartLocation] = useState('');
   const [endLocation, setEndLocation] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState(''); // Add state for phone number
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useUser();
@@ -54,6 +54,7 @@ export function Details() {
           user_id: user.id,
           latitude: latitude,
           longitude: longitude,
+          phone_number: phoneNumber, // Add phone number to the insert
         });
 
       if (error) {
@@ -69,9 +70,15 @@ export function Details() {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen px-4">
-      <Card className="w-full max-w-4xl h-full max-h-[90vh] flex flex-col md:flex-row">
-        <div className="w-full h-64 md:h-full md:w-1/2">
+    <div className="relative flex items-center justify-center h-screen w-screen px-4">
+      <iframe
+        src="https://lottie.host/embed/d997ffb3-e906-495e-9669-c3da4041e23b/LxBNuJf5AE.json"
+        className="absolute inset-0 w-full h-full"
+        style={{ zIndex: -1 }}
+        frameBorder="0"
+      ></iframe>
+      <Card className="w-full max-w-4xl h-full max-h-[90vh] flex flex-col md:flex-row bg-opacity-80 bg-white backdrop-blur-sm">
+        <div className="w-full h-64 md:h-full md:w-1/2 p-1">
           <Map />
         </div>
         <div className="w-full h-full md:w-1/2 p-4 flex items-center justify-center">
@@ -100,6 +107,16 @@ export function Details() {
                     placeholder="End Location"
                     value={endLocation}
                     onChange={(e) => setEndLocation(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="flex flex-col space-y-1.5">
+                  <Label htmlFor="phone_number">Phone Number</Label>
+                  <Input
+                    id="phone_number"
+                    placeholder="Your Phone Number"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
                     required
                   />
                 </div>

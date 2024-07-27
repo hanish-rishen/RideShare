@@ -4,7 +4,7 @@ import { Details } from '@/components/CardWithForm';
 
 const DetailsPage = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 bg-gray-100">
+    <div className="flex min-h-screen items-center justify-center p-4">
       <Details />
     </div>
   );
