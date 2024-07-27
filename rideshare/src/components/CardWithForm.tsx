@@ -1,5 +1,4 @@
-"use client";
-
+"use client"
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -16,9 +15,9 @@ export function Details() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [locations, setLocations] = useState<{ latitude: number; longitude: number; user_id: string }[]>([]);
+  const [locations, setLocations] = useState<{ latitude: number; longitude: number; user_id: string; phone_number: string }[]>([]);
   const [users, setUsers] = useState<{ user_id: string; username: string }[]>([]);
-  const [matches, setMatches] = useState<{ user_id: string; latitude: number; longitude: number; username: string; distance: number }[]>([]);
+  const [matches, setMatches] = useState<{ user_id: string; latitude: number; longitude: number; phone_number: string; username: string; distance: number }[]>([]);
   const [showForm, setShowForm] = useState(true);
   const [recentLocations, setRecentLocations] = useState<string[]>([]);
   const [filteredLocations, setFilteredLocations] = useState<string[]>([]);
@@ -75,7 +74,7 @@ export function Details() {
       setError((error as Error).message);
     }
 
-    // Introduce a delay of 2.5 seconds before setting loading to false
+    // Introduce a delay of 500 milliseconds before setting loading to false
     setTimeout(() => setLoading(false), 500);
   };
 
@@ -84,11 +83,15 @@ export function Details() {
     router.push('/');
   };
 
+  const handleNewRide = () => {
+    setShowForm(true);
+  };
+
   const fetchLocations = async () => {
     try {
       const { data: locationsData, error: locationsError } = await supabase
         .from('rideshare')
-        .select('latitude, longitude, user_id, start_time')
+        .select('latitude, longitude, user_id, phone_number, start_time')
         .order('start_time', { ascending: false });
 
       if (locationsError) {
@@ -97,7 +100,13 @@ export function Details() {
       }
 
       setLocations(locationsData || []);
+    } catch (error) {
+      console.error("Error fetching data:", (error as Error).message);
+    }
+  };
 
+  const fetchUsers = async () => {
+    try {
       const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select('user_id, username');
@@ -137,21 +146,34 @@ export function Details() {
 
     const { latitude, longitude } = currentUserLocation;
 
-    const nearbyUsers = locations.filter(location => {
-      if (location.user_id === user.id) return false;
-      const distance = getDistance(latitude, longitude, location.latitude, location.longitude);
-      return distance <= thresholdDistance;
-    }).map(location => {
-      const user = users.find(user => user.user_id === location.user_id);
-      const distance = getDistance(latitude, longitude, location.latitude, location.longitude);
+    const nearbyUsers = locations
+      .filter(location => location.user_id !== user.id)
+      .map(location => {
+        const distance = getDistance(latitude, longitude, location.latitude, location.longitude);
+        return {
+          ...location,
+          distance: distance
+        };
+      })
+      .filter(user => user.distance <= thresholdDistance);
+
+    const matchesWithUsernames = nearbyUsers.map(user => {
+      const matchedUser = users.find(u => u.user_id === user.user_id);
       return {
-        ...location,
-        username: user?.username || 'Unknown',
-        distance: distance // Include the distance in the results
+        ...user,
+        username: matchedUser?.username || 'Unknown'
       };
     });
 
-    setMatches(nearbyUsers);
+    if (matchesWithUsernames.length > 0) {
+      const nearestUser = matchesWithUsernames.reduce((nearest, user) => {
+        return user.distance < nearest.distance ? user : nearest;
+      }, matchesWithUsernames[0]);
+
+      setMatches([nearestUser]);
+    } else {
+      setMatches([]);
+    }
   };
 
   const updateRecentLocations = (location: string) => {
@@ -176,6 +198,7 @@ export function Details() {
   useEffect(() => {
     if (!showForm) {
       fetchLocations();
+      fetchUsers(); // Fetch users after hiding the form
     }
   }, [showForm]);
 
@@ -215,14 +238,14 @@ export function Details() {
                       required
                     />
                     {filteredLocations.length > 0 && (
-                      <ul className="absolute z-10 bg-white border border-gray-300 mt-1 rounded-lg shadow-lg max-h-40 overflow-auto w-full">
-                        {filteredLocations.map((location, index) => (
+                      <ul className="absolute z-10 mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
+                        {filteredLocations.map((suggestion, index) => (
                           <li
                             key={index}
-                            className="p-2 cursor-pointer hover:bg-gray-200"
-                            onClick={() => handleSuggestionClick(location, setStartLocation)}
+                            className="px-4 py-2 cursor-pointer hover:bg-gray-200"
+                            onClick={() => handleSuggestionClick(suggestion, setStartLocation)}
                           >
-                            {location}
+                            {suggestion}
                           </li>
                         ))}
                       </ul>
@@ -238,14 +261,14 @@ export function Details() {
                       required
                     />
                     {filteredLocations.length > 0 && (
-                      <ul className="absolute z-10 bg-white border border-gray-300 mt-1 rounded-lg shadow-lg max-h-40 overflow-auto w-full">
-                        {filteredLocations.map((location, index) => (
+                      <ul className="absolute z-10 mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
+                        {filteredLocations.map((suggestion, index) => (
                           <li
                             key={index}
-                            className="p-2 cursor-pointer hover:bg-gray-200"
-                            onClick={() => handleSuggestionClick(location, setEndLocation)}
+                            className="px-4 py-2 cursor-pointer hover:bg-gray-200"
+                            onClick={() => handleSuggestionClick(suggestion, setEndLocation)}
                           >
-                            {location}
+                            {suggestion}
                           </li>
                         ))}
                       </ul>
@@ -255,36 +278,37 @@ export function Details() {
                     <Label htmlFor="phone_number" className="text-gray-700">Phone Number</Label>
                     <Input
                       id="phone_number"
+                      placeholder="Your Phone Number"
                       type="tel"
-                      placeholder="Your phone number"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       required
                     />
                   </div>
-                  <Button type="submit" disabled={loading} className="w-full">Find Ride</Button>
+                  <Button type="submit" className="w-full">Submit</Button>
                 </form>
+              ) : matches.length > 0 ? (
+                <div className="flex-grow flex flex-col justify-center items-center">
+                  <Card className="w-full max-w-md p-4 mx-auto bg-blue-100 border border-blue-300 rounded-lg shadow-md">
+                    <CardHeader>
+                      <CardTitle className="text-xl font-bold text-blue-800">Nearby Users</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-800">Username: {matches[0].username}</p>
+                      <p className="text-gray-600">Distance: {matches[0].distance.toFixed(2)} km</p>
+                      <p className="text-gray-600">Phone: {matches[0].phone_number}</p>
+                    </CardContent>
+                  </Card>
+                  <Button onClick={handleNewRide} className="w-full mt-4 bg-green-500 hover:bg-green-600">New Ride</Button>
+                </div>
               ) : (
-                <>
-                  {matches.length > 0 ? (
-                    <div className="space-y-4">
-                      {matches.map((match, index) => (
-                        <Card key={index} className="p-4 bg-gray-200 border border-gray-300 rounded-md shadow-md">
-                          <CardHeader>
-                            <CardTitle className="text-lg font-bold text-gray-800">{match.username}</CardTitle>
-                            <CardDescription className="text-gray-600">Distance: {match.distance.toFixed(2)} km</CardDescription>
-                          </CardHeader>
-                        </Card>
-                      ))}
-                      <Button className="w-full mt-4" onClick={() => setShowForm(true)}>New Ride</Button>
-                    </div>
-                  ) : (
-                    <p className="text-gray-600">No nearby rides found.</p>
-                  )}
-                </>
+                <div className="flex-grow flex items-center justify-center">
+                  <p className="text-gray-600">No nearby users found.</p>
+                  <Button onClick={handleNewRide} className="w-full mt-4 bg-green-500 hover:bg-green-600">New Ride</Button>
+                </div>
               )}
             </CardContent>
-            <Button onClick={handleLogout} className="mt-4">Logout</Button>
+            <Button onClick={handleLogout} className="w-full mt-4">Logout</Button>
           </div>
         </div>
       </Card>
