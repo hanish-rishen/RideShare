@@ -271,15 +271,15 @@ export function Details() {
                   </div>
                 </form>
               ) : (
-                <div>
+                <div className="flex-grow overflow-auto">
                   {matches.length > 0 ? (
-                    <ul>
+                    <ul className="divide-y divide-gray-200">
                       {matches.map((match, index) => (
-                        <li key={index} className="py-2 px-4 border-b border-gray-200">
-                          <div className="flex justify-between items-center">
-                            <span>{match.username}</span>
+                        <li key={index} className="py-4 px-2 flex justify-between items-center text-sm md:text-base">
+                          <div className="flex flex-col">
+                            <span className="font-semibold">{match.username}</span>
                             <span>{match.latitude}, {match.longitude}</span>
-                            <span>{match.distance.toFixed(2)} km</span> {/* Display distance */}
+                            <span>{match.distance.toFixed(2)} km</span>
                           </div>
                         </li>
                       ))}
