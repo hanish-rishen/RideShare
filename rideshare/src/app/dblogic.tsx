@@ -1,7 +1,8 @@
 import { supabase } from "@/lib/supabaseClient";
+import { UUID } from "crypto";
 
 interface Ride {
-  id: number;
+  id: UUID;
   user_id: string;
   start_location: string;
   destination_location: string;
