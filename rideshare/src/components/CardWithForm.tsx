@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { useUser } from "@/lib/hooks/useUser";
 import { useRouter } from 'next/navigation';
 import Map from "@/components/Map";
 import { motion, AnimatePresence } from 'framer-motion';
+import { FaCopy } from 'react-icons/fa';
 
 export function Details() {
   const [startLocation, setStartLocation] = useState('');
@@ -22,6 +23,7 @@ export function Details() {
   const [showForm, setShowForm] = useState(true);
   const [recentLocations, setRecentLocations] = useState<string[]>([]);
   const [filteredLocations, setFilteredLocations] = useState<string[]>([]);
+  const [isCopied, setIsCopied] = useState(false);
   const { user } = useUser();
   const router = useRouter();
 
@@ -196,6 +198,17 @@ export function Details() {
     setFilteredLocations([]);
   };
 
+  const handleCopyPhoneNumber = (phone: string) => {
+    navigator.clipboard.writeText(phone)
+      .then(() => {
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000); // Reset copy status after 2 seconds
+      })
+      .catch((error) => {
+        console.error("Failed to copy text:", error);
+      });
+  };
+
   useEffect(() => {
     if (!showForm) {
       fetchLocations();
@@ -218,124 +231,97 @@ export function Details() {
         <div className="w-full h-full md:w-1/2 p-4 flex flex-col justify-between">
           <div className="flex-grow flex flex-col justify-between">
             <CardHeader>
-              <CardTitle className="text-xl font-bold text-gray-800">RideShare</CardTitle>
-              <CardDescription className="text-gray-600">Get your ride in one-click.</CardDescription>
+              <CardTitle className="text-xl font-bold text-gray-700">
+                {showForm ? 'Enter Ride Details' : 'Nearby Users'}
+              </CardTitle>
             </CardHeader>
-            <CardContent className="flex-grow flex flex-col justify-between">
-              <AnimatePresence>
-                {loading ? (
-                  <motion.div
-                    key="loading"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex items-center justify-center h-full"
-                  >
-                    <p className="text-gray-600">Loading...</p>
-                  </motion.div>
-                ) : showForm ? (
-                  <motion.form
-                    key="form"
-                    onSubmit={handleSubmit}
-                    className="space-y-4"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <div className="relative flex flex-col space-y-1.5">
-                      <Label htmlFor="start_location" className="text-gray-700">Start Location</Label>
-                      <Input
-                        id="start_location"
-                        placeholder="Current Location"
-                        value={startLocation}
-                        onChange={(e) => handleLocationChange(e, setStartLocation)}
-                        required
-                      />
-                      {filteredLocations.length > 0 && (
-                        <ul className="absolute z-10 mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
-                          {filteredLocations.map((suggestion, index) => (
-                            <li
-                              key={index}
-                              className="px-4 py-2 cursor-pointer hover:bg-gray-200"
-                              onClick={() => handleSuggestionClick(suggestion, setStartLocation)}
-                            >
-                              {suggestion}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                    <div className="relative flex flex-col space-y-1.5">
-                      <Label htmlFor="end_location" className="text-gray-700">End Location</Label>
-                      <Input
-                        id="end_location"
-                        placeholder="Destination"
-                        value={endLocation}
-                        onChange={(e) => handleLocationChange(e, setEndLocation)}
-                        required
-                      />
-                      {filteredLocations.length > 0 && (
-                        <ul className="absolute z-10 mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
-                          {filteredLocations.map((suggestion, index) => (
-                            <li
-                              key={index}
-                              className="px-4 py-2 cursor-pointer hover:bg-gray-200"
-                              onClick={() => handleSuggestionClick(suggestion, setEndLocation)}
-                            >
-                              {suggestion}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                    <div className="relative flex flex-col space-y-1.5">
-                      <Label htmlFor="phone_number" className="text-gray-700">Phone Number</Label>
-                      <Input
-                        id="phone_number"
-                        placeholder="Your Phone Number"
-                        type="tel"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <Button type="submit" className="w-full">Submit</Button>
-                  </motion.form>
-                ) : matches.length > 0 ? (
-                  <motion.div
-                    key="matches"
-                    className="flex-grow flex flex-col justify-center items-center"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <Card className="w-full max-w-md p-4 mx-auto bg-blue-100 border border-blue-300 rounded-lg shadow-md">
-                      <CardHeader>
-                        <CardTitle className="text-xl font-bold text-blue-800">Nearby Users</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-gray-800">Username: {matches[0].username}</p>
-                        <p className="text-gray-600">Distance: {matches[0].distance.toFixed(2)} km</p>
-                        <p className="text-gray-600">Phone: {matches[0].phone_number}</p>
-                      </CardContent>
-                    </Card>
-                    <Button onClick={handleNewRide} className="w-full mt-4 bg-green-500 hover:bg-green-600">New Ride</Button>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="no-matches"
-                    className="flex-grow flex items-center justify-center"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <p className="text-gray-600">No nearby users found.</p>
-                    <Button onClick={handleNewRide} className="w-full mt-4 bg-green-500 hover:bg-green-600">New Ride</Button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+            <CardContent className="flex-grow">
+              {showForm ? (
+                <form onSubmit={handleSubmit}>
+                  <div className="mb-4">
+                    <Label htmlFor="startLocation">Start Location</Label>
+                    <Input
+                      id="startLocation"
+                      value={startLocation}
+                      onChange={(e) => handleLocationChange(e, setStartLocation)}
+                      required
+                    />
+                    {filteredLocations.length > 0 && (
+                      <ul className="bg-white border border-gray-300 mt-2 rounded-md shadow-md">
+                        {filteredLocations.map((suggestion, index) => (
+                          <li
+                            key={index}
+                            className="p-2 cursor-pointer hover:bg-gray-200"
+                            onClick={() => handleSuggestionClick(suggestion, setStartLocation)}
+                          >
+                            {suggestion}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  <div className="mb-4">
+                    <Label htmlFor="endLocation">End Location</Label>
+                    <Input
+                      id="endLocation"
+                      value={endLocation}
+                      onChange={(e) => handleLocationChange(e, setEndLocation)}
+                      required
+                    />
+                    {filteredLocations.length > 0 && (
+                      <ul className="bg-white border border-gray-300 mt-2 rounded-md shadow-md">
+                        {filteredLocations.map((suggestion, index) => (
+                          <li
+                            key={index}
+                            className="p-2 cursor-pointer hover:bg-gray-200"
+                            onClick={() => handleSuggestionClick(suggestion, setEndLocation)}
+                          >
+                            {suggestion}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  <div className="mb-4">
+                    <Label htmlFor="phoneNumber">Phone Number</Label>
+                    <Input
+                      id="phoneNumber"
+                      type="tel"
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? 'Saving...' : 'Find Ride'}
+                  </Button>
+                </form>
+              ) : (
+                <div className="space-y-4">
+                  {matches.length > 0 ? (
+                    matches.map((match, index) => (
+                      <div key={index} className="bg-gray-100 p-4 rounded-md shadow-md flex items-center justify-between">
+                        <div>
+                          <p className="font-bold text-gray-700">Username: {match.username}</p>
+                          <p className="text-gray-600">Phone Number: {match.phone_number}</p>
+                          <p className="text-gray-600">Distance: {match.distance.toFixed(2)} km</p>
+                        </div>
+                        <Button onClick={() => handleCopyPhoneNumber(match.phone_number)}>
+                          <FaCopy className="mr-2" />
+                          {isCopied ? "Copied!" : "Copy"}
+                        </Button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-600">No nearby users found within 5 km radius.</p>
+                  )}
+                </div>
+              )}
             </CardContent>
-            <Button onClick={handleLogout} className="w-full mt-4">Logout</Button>
+          </div>
+          <div className="flex justify-end space-x-2 mt-4">
+            {!showForm && <Button onClick={handleNewRide}>New Ride</Button>}
+            <Button variant="outline" onClick={handleLogout}>Logout</Button>
           </div>
         </div>
       </Card>
