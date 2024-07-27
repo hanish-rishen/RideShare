@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
+
 export const useUser = () => {
   const [user, setUser] = useState<any>(null);
 

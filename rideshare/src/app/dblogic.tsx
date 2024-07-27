@@ -8,30 +8,7 @@ interface Ride {
   start_time: string; // Assuming start_time is stored as a string in ISO format
 }
 
-export async function addReq(start_loc: string, end_loc: string, user_id: string): Promise<void> {
-  const start_time = new Date().toISOString(); // Current time as start_time
-
-  const { data, error } = await supabase
-    .from('RideShare')
-    .insert([
-      {
-        user_id,
-        start_location: start_loc,
-        destination_location: end_loc,
-        start_time
-      }
-    ]);
-
-  if (error) {
-    console.error('Error adding ride request:', error.message);
-    throw error;
-  }
-
-  console.log('Ride request added:', data);
-  await pair_users(start_loc, end_loc, user_id);
-}
-
-async function pair_users(start_loc: string, end_loc: string, user_id: string): Promise<void> {
+async function pair_users(): Promise<void> {
   try {
     const { data: rides, error } = await supabase
       .from<Ride>('RideShare')
@@ -48,32 +25,53 @@ async function pair_users(start_loc: string, end_loc: string, user_id: string): 
     const timeFilteredRides = rides.filter((ride) => {
       const rideStartTime = new Date(ride.start_time).getTime();
       const currentStartTime = new Date(currentTime).getTime();
-
       return Math.abs(rideStartTime - currentStartTime) <= timeRange;
     });
 
-    // Filter rides based on matching start and end locations
+    // Create a map to store rides based on start and destination locations for efficient matching
+    const rideMap = new Map<string, Ride[]>();
+
+    timeFilteredRides.forEach((ride) => {
+      const key = ${ride.start_location}->${ride.destination_location};
+      if (!rideMap.has(key)) {
+        rideMap.set(key, []);
+      }
+      rideMap.get(key)!.push(ride);
+    });
+
     const ridePairs: [Ride, Ride][] = [];
 
-    for (let i = 0; i < timeFilteredRides.length; i++) {
-      for (let j = i + 1; j < timeFilteredRides.length; j++) {
-        if (
-          timeFilteredRides[i].start_location === timeFilteredRides[j].destination_location &&
-          timeFilteredRides[i].destination_location === timeFilteredRides[j].start_location
-        ) {
-          ridePairs.push([timeFilteredRides[i], timeFilteredRides[j]]);
+    rideMap.forEach((rides, key) => {
+      const [start_location, destination_location] = key.split('->');
+      const reverseKey = ${destination_location}->${start_location};
+
+      if (rideMap.has(reverseKey)) {
+        const reverseRides = rideMap.get(reverseKey)!;
+
+        for (const rideA of rides) {
+          for (const rideB of reverseRides) {
+            if (
+              rideA.user_id !== rideB.user_id &&
+              Math.abs(new Date(rideA.start_time).getTime() - new Date(rideB.start_time).getTime()) <= timeRange
+            ) {
+              ridePairs.push([rideA, rideB]);
+              rideMap.delete(key);
+              rideMap.delete(reverseKey);
+              break;
+            }
+          }
         }
       }
-    }
+    });
 
     if (ridePairs.length > 0) {
-      const bestPair = ridePairs[0]; // Simplified: choosing the first pair for demonstration
+      ridePairs.forEach(([rideA, rideB]) => {
+        console.log(Matched Ride A: ${JSON.stringify(rideA)});
+        console.log(Matched Ride B: ${JSON.stringify(rideB)});
 
-      console.log(Matched Ride A: ${JSON.stringify(bestPair[0])});
-      console.log(Matched Ride B: ${JSON.stringify(bestPair[1])});
-
-      // Further logic to handle matched rides
-      // Example: Update the database or notify users
+        // Notify users
+        notify_users(rideA, rideB);
+      });
     } else {
       console.log('No matching rides found within the specified time and location range.');
     }
@@ -82,7 +80,26 @@ async function pair_users(start_loc: string, end_loc: string, user_id: string): 
   }
 }
 
+async function notify_users(rideA: Ride, rideB: Ride): Promise<void> {
+  try {
+    // Example notification logic
+    const messageA = You have been matched with another rider. Ride details: ${JSON.stringify(rideB)};
+    const messageB = You have been matched with another rider. Ride details: ${JSON.stringify(rideA)};
+
+    // Simulating notification sending
+    console.log(Notifying user ${rideA.user_id}: ${messageA});
+    console.log(Notifying user ${rideB.user_id}: ${messageB});
+
+    // Update ride status in the database (example)
+    await supabase
+      .from('RideShare')
+      .update({ status: 'matched' })
+      .in('id', [rideA.id, rideB.id]);
+
+  } catch (error) {
+    console.error(Error notifying users: ${error.message});
+  }
+}
+
 // Example usage:
-
-
-addReq('LocationA', 'LocationB', 'user123');
+pair_users();
