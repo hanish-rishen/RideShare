@@ -9,7 +9,7 @@ const Map = () => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null); // To ensure map is only initialized once
   const [initialCenter, setInitialCenter] = useState<[number, number] | null>(null);
-
+   
   useEffect(() => {
     // Fetch the current location when the component mounts
     if (navigator.geolocation) {
@@ -30,6 +30,7 @@ const Map = () => {
     }
   }, []);
 
+  
   useEffect(() => {
     if (mapContainerRef.current && !mapRef.current) {
       mapRef.current = new maplibregl.Map({

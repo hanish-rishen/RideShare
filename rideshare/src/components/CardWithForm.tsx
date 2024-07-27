@@ -236,93 +236,143 @@ export function Details() {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-grow">
-              {showForm ? (
-                <form onSubmit={handleSubmit}>
-                  <div className="mb-4">
-                    <Label htmlFor="startLocation">Start Location</Label>
-                    <Input
-                      id="startLocation"
-                      value={startLocation}
-                      onChange={(e) => handleLocationChange(e, setStartLocation)}
-                      required
-                    />
-                    {filteredLocations.length > 0 && (
-                      <ul className="bg-white border border-gray-300 mt-2 rounded-md shadow-md">
-                        {filteredLocations.map((suggestion, index) => (
-                          <li
-                            key={index}
-                            className="p-2 cursor-pointer hover:bg-gray-200"
-                            onClick={() => handleSuggestionClick(suggestion, setStartLocation)}
-                          >
-                            {suggestion}
-                          </li>
+              <AnimatePresence>
+                {showForm ? (
+                  <motion.form
+                    key="form"
+                    onSubmit={handleSubmit}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="space-y-4"
+                  >
+                    <div className="space-y-1">
+                      
+                      <Label htmlFor="startLocation">Start Location</Label>
+                      <Input
+                        id="startLocation"
+                        value={startLocation}
+                        onChange={(e) => handleLocationChange(e, setStartLocation)}
+                        className="w-full"
+                        list="recent-start-locations"
+                      />
+                      <datalist id="recent-start-locations">
+                        {filteredLocations.map((loc, index) => (
+                          <option key={index} value={loc} />
                         ))}
-                      </ul>
-                    )}
-                  </div>
-                  <div className="mb-4">
-                    <Label htmlFor="endLocation">End Location</Label>
-                    <Input
-                      id="endLocation"
-                      value={endLocation}
-                      onChange={(e) => handleLocationChange(e, setEndLocation)}
-                      required
-                    />
-                    {filteredLocations.length > 0 && (
-                      <ul className="bg-white border border-gray-300 mt-2 rounded-md shadow-md">
-                        {filteredLocations.map((suggestion, index) => (
-                          <li
-                            key={index}
-                            className="p-2 cursor-pointer hover:bg-gray-200"
-                            onClick={() => handleSuggestionClick(suggestion, setEndLocation)}
+                      </datalist>
+                      <AnimatePresence>
+                        {filteredLocations.length > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="mt-2 bg-white border border-gray-200 rounded-md shadow-lg"
                           >
-                            {suggestion}
-                          </li>
+                            {filteredLocations.map((loc, index) => (
+                              <div
+                                key={index}
+                                onClick={() => handleSuggestionClick(loc, setStartLocation)}
+                                className="p-2 cursor-pointer hover:bg-gray-100"
+                              >
+                                {loc}
+                              </div>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="endLocation">End Location</Label>
+                      <Input
+                        id="endLocation"
+                        value={endLocation}
+                        onChange={(e) => handleLocationChange(e, setEndLocation)}
+                        className="w-full"
+                        list="recent-end-locations"
+                      />
+                      <datalist id="recent-end-locations">
+                        {filteredLocations.map((loc, index) => (
+                          <option key={index} value={loc} />
                         ))}
-                      </ul>
-                    )}
-                  </div>
-                  <div className="mb-4">
-                    <Label htmlFor="phoneNumber">Phone Number</Label>
-                    <Input
-                      id="phoneNumber"
-                      type="tel"
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Saving...' : 'Find Ride'}
-                  </Button>
-                </form>
-              ) : (
-                <div className="space-y-4">
-                  {matches.length > 0 ? (
-                    matches.map((match, index) => (
-                      <div key={index} className="bg-gray-100 p-4 rounded-md shadow-md flex items-center justify-between">
-                        <div>
-                          <p className="font-bold text-gray-700">Username: {match.username}</p>
-                          <p className="text-gray-600">Phone Number: {match.phone_number}</p>
-                          <p className="text-gray-600">Distance: {match.distance.toFixed(2)} km</p>
-                        </div>
-                        <Button onClick={() => handleCopyPhoneNumber(match.phone_number)}>
-                          <FaCopy className="mr-2" />
-                          {isCopied ? "Copied!" : "Copy"}
-                        </Button>
+                      </datalist>
+                      <AnimatePresence>
+                        {filteredLocations.length > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="mt-2 bg-white border border-gray-200 rounded-md shadow-lg"
+                          >
+                            {filteredLocations.map((loc, index) => (
+                              <div
+                                key={index}
+                                onClick={() => handleSuggestionClick(loc, setEndLocation)}
+                                className="p-2 cursor-pointer hover:bg-gray-100"
+                              >
+                                {loc}
+                              </div>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="phoneNumber">Phone Number</Label>
+                      <Input
+                        id="phoneNumber"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        className="w-full"
+                      />
+                    </div>
+                    {error && <p className="text-red-500">{error}</p>}
+                    <Button type="submit" className="w-full bg-blue-600 text-white py-2 mt-4" disabled={loading}>
+                      {loading ? 'Loading...' : 'Find Ride'}
+                    </Button>
+                  </motion.form>
+                ) : (
+                  <motion.div
+                    key="matches"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="space-y-4"
+                  >
+                    {matches.length > 0 ? (
+                      <div className="space-y-2">
+                        <p>Here are the nearby users:</p>
+                        {matches.map((match, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 border border-gray-200 rounded-md">
+                            <div>
+                              <p className="font-bold">{match.username}</p>
+                              <p className="text-sm text-gray-600">{match.phone_number}</p>
+                            </div>
+                            <Button
+                              variant="secondary"
+                              onClick={() => handleCopyPhoneNumber(match.phone_number)}
+                              className="flex items-center"
+                            >
+                              <FaCopy className="mr-1" />
+                              {isCopied ? 'Copied!' : 'Copy'}
+                            </Button>
+                          </div>
+                        ))}
                       </div>
-                    ))
-                  ) : (
-                    <p className="text-gray-600">No nearby users found within 5 km radius.</p>
-                  )}
-                </div>
-              )}
+                    ) : (
+                      <p>No matches found within 5 kilometers.</p>
+                    )}
+                    <Button onClick={handleNewRide} className="w-full bg-blue-600 text-white py-2 mt-4">
+                      New Ride
+                    </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </CardContent>
           </div>
-          <div className="flex justify-end space-x-2 mt-4">
-            {!showForm && <Button onClick={handleNewRide}>New Ride</Button>}
-            <Button variant="outline" onClick={handleLogout}>Logout</Button>
-          </div>
+          <Button onClick={handleLogout} variant="outline" className="mt-4">
+            Logout
+          </Button>
         </div>
       </Card>
     </div>
