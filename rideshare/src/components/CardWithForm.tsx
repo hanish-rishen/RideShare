@@ -18,8 +18,10 @@ export function Details() {
   const [error, setError] = useState<string | null>(null);
   const [locations, setLocations] = useState<{ latitude: number; longitude: number; user_id: string }[]>([]);
   const [users, setUsers] = useState<{ user_id: string; username: string }[]>([]);
-  const [matches, setMatches] = useState<{ user_id: string; latitude: number; longitude: number; username: string }[]>([]);
+  const [matches, setMatches] = useState<{ user_id: string; latitude: number; longitude: number; username: string; distance: number }[]>([]);
   const [showForm, setShowForm] = useState(true); // State to control form display
+  const [recentLocations, setRecentLocations] = useState<string[]>([]); // State to store recent locations
+  const [filteredLocations, setFilteredLocations] = useState<string[]>([]); // State to store filtered suggestions
   const { user } = useUser();
   const router = useRouter();
 
@@ -67,6 +69,8 @@ export function Details() {
       } else {
         fetchLocations(); // Fetch locations after successful insertion
         setShowForm(false); // Hide the form after successful submission
+        updateRecentLocations(startLocation);
+        updateRecentLocations(endLocation);
       }
     } catch (error) {
       setError((error as Error).message);
@@ -140,7 +144,7 @@ export function Details() {
 
     console.log(`Current user location: (${latitude}, ${longitude})`);
 
-    // Find nearby users and include their usernames
+    // Find nearby users and include their usernames and distances
     const nearbyUsers = locations.filter(location => {
       if (location.user_id === user.id) return false;
       const distance = getDistance(latitude, longitude, location.latitude, location.longitude);
@@ -148,14 +152,35 @@ export function Details() {
       return distance <= thresholdDistance;
     }).map(location => {
       const user = users.find(user => user.user_id === location.user_id);
+      const distance = getDistance(latitude, longitude, location.latitude, location.longitude);
       return {
         ...location,
-        username: user?.username || 'Unknown'
+        username: user?.username || 'Unknown',
+        distance: distance // Include the distance in the results
       };
     });
 
     console.log("Nearby users:", nearbyUsers);
     setMatches(nearbyUsers);
+  };
+
+  const updateRecentLocations = (location: string) => {
+    setRecentLocations(prevLocations => {
+      const updatedLocations = [location, ...prevLocations.filter(loc => loc !== location)];
+      if (updatedLocations.length > 5) updatedLocations.pop(); // Keep the last 5 locations
+      return updatedLocations;
+    });
+  };
+
+  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>, setLocation: React.Dispatch<React.SetStateAction<string>>) => {
+    const value = e.target.value;
+    setLocation(value);
+    setFilteredLocations(recentLocations.filter(loc => loc.toLowerCase().includes(value.toLowerCase())));
+  };
+
+  const handleSuggestionClick = (suggestion: string, setLocation: React.Dispatch<React.SetStateAction<string>>) => {
+    setLocation(suggestion);
+    setFilteredLocations([]);
   };
 
   useEffect(() => {
@@ -180,27 +205,53 @@ export function Details() {
               {showForm ? (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   {error && <p className="text-red-500">{error}</p>}
-                  <div className="flex flex-col space-y-1.5">
+                  <div className="relative flex flex-col space-y-1.5">
                     <Label htmlFor="start_location" className="text-gray-700">Start Location</Label>
                     <Input
                       id="start_location"
                       placeholder="Your Location"
                       value={startLocation}
-                      onChange={(e) => setStartLocation(e.target.value)}
+                      onChange={(e) => handleLocationChange(e, setStartLocation)}
                       required
                     />
+                    {filteredLocations.length > 0 && (
+                      <ul className="absolute z-10 bg-white border border-gray-300 mt-1 rounded-lg shadow-lg max-h-40 overflow-auto w-full">
+                        {filteredLocations.map((location, index) => (
+                          <li
+                            key={index}
+                            className="p-2 cursor-pointer hover:bg-gray-200"
+                            onClick={() => handleSuggestionClick(location, setStartLocation)}
+                          >
+                            {location}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
-                  <div className="flex flex-col space-y-1.5">
-                    <Label htmlFor="end_location" className="text-gray-700">Destination</Label>
+                  <div className="relative flex flex-col space-y-1.5">
+                    <Label htmlFor="end_location" className="text-gray-700">End Location</Label>
                     <Input
                       id="end_location"
-                      placeholder="End Location"
+                      placeholder="Destination"
                       value={endLocation}
-                      onChange={(e) => setEndLocation(e.target.value)}
+                      onChange={(e) => handleLocationChange(e, setEndLocation)}
                       required
                     />
+                    {filteredLocations.length > 0 && (
+                      <ul className="absolute z-10 bg-white border border-gray-300 mt-1 rounded-lg shadow-lg max-h-40 overflow-auto w-full">
+                        {filteredLocations.map((location, index) => (
+                          <li
+                            key={index}
+                            className="p-2 cursor-pointer hover:bg-gray-200"
+                            onClick={() => handleSuggestionClick(location, setEndLocation)}
+                          >
+                            {location}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
-                  <div className="flex flex-col space-y-1.5">
+                  <div className="relative flex flex-col space-y-1.5">
                     <Label htmlFor="phone_number" className="text-gray-700">Phone Number</Label>
                     <Input
                       id="phone_number"
@@ -210,30 +261,31 @@ export function Details() {
                       required
                     />
                   </div>
-                  <div className="flex flex-col md:flex-row gap-4">
-                    <Button type="submit" className="w-full md:w-auto bg-gray-800 text-white hover:bg-gray-900" disabled={loading}>
-                      {loading ? 'Finding Ride...' : 'Find Ride'}
+                  <div className="flex space-x-4">
+                    <Button type="submit" disabled={loading} className="text-white">
+                      {loading ? 'Submitting...' : 'Find Ride'}
                     </Button>
-                    <Button type="button" onClick={handleLogout} variant="outline" className="w-full md:w-auto text-gray-800 border-gray-800 hover:bg-gray-50">
+                    <Button onClick={handleLogout} className="bg-red-500 text-white">
                       Logout
                     </Button>
                   </div>
                 </form>
               ) : (
-                <div className="mt-4">
+                <div>
                   {matches.length > 0 ? (
-                    <>
-                      <h2 className="text-lg font-semibold text-gray-800">Nearby Users</h2>
-                      <ul className="list-disc list-inside text-gray-700">
-                        {matches.map(match => (
-                          <li key={match.user_id}>
-                            {match.username} (User ID: {match.user_id}) at ({match.latitude}, {match.longitude})
-                          </li>
-                        ))}
-                      </ul>
-                    </>
+                    <ul>
+                      {matches.map((match, index) => (
+                        <li key={index} className="py-2 px-4 border-b border-gray-200">
+                          <div className="flex justify-between items-center">
+                            <span>{match.username}</span>
+                            <span>{match.latitude}, {match.longitude}</span>
+                            <span>{match.distance.toFixed(2)} km</span> {/* Display distance */}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
                   ) : (
-                    <p className="text-gray-700">No nearby users found.</p>
+                    <p className="text-gray-600">No nearby rides found.</p>
                   )}
                 </div>
               )}
