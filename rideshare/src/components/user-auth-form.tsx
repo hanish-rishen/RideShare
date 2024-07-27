@@ -1,13 +1,11 @@
-"use client"
-
-import * as React from "react"
-import { useRouter } from 'next/navigation'
-import { supabase } from "@/lib/supabaseClient"
-import { cn } from "@/lib/utils"
-import { Icons } from "@/components/ui/icons"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import * as React from "react";
+import { useRouter } from 'next/navigation';
+import { supabase } from "@/lib/supabaseClient";
+import { cn } from "@/lib/utils";
+import { Icons } from "@/components/ui/icons";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
   isSignUp: boolean;
@@ -15,49 +13,81 @@ interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export function UserAuthForm({ className, isSignUp, setIsSignUp, ...props }: UserAuthFormProps) {
-  const [email, setEmail] = React.useState<string>('')
-  const [password, setPassword] = React.useState<string>('')
-  const [isLoading, setIsLoading] = React.useState<boolean>(false)
-  const [error, setError] = React.useState<string | null>(null)
-  const router = useRouter()
+  const [email, setEmail] = React.useState<string>('');
+  const [password, setPassword] = React.useState<string>('');
+  const [username, setUsername] = React.useState<string>(''); // New state for username
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const router = useRouter();
 
   async function onSubmit(event: React.SyntheticEvent) {
-    event.preventDefault()
-    setIsLoading(true)
-    setError(null)
-
+    event.preventDefault();
+    setIsLoading(true);
+    setError(null);
+  
     if (isSignUp) {
-      const { error } = await supabase.auth.signUp({
+      const { error: authError, data: user } = await supabase.auth.signUp({
         email,
         password,
-      })
-
-      if (error) {
-        setError(error.message)
+      });
+  
+      if (authError) {
+        setError(authError.message);
+        setIsLoading(false);
+        return;
+      }
+  
+      if (user && user.user) {
+        // Store the username in the new table
+        const { error: dbError } = await supabase.from('users').insert([
+          { user_id: user.user.id, email, username }
+        ]);
+  
+        if (dbError) {
+          setError(dbError.message);
+        } else {
+          router.push('/details');
+        }
       } else {
-        router.push('/details') // Redirect to the details page on successful sign-up
+        setError("Unexpected error: User data is not available.");
       }
     } else {
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
-      })
-
+      });
+  
       if (error) {
-        setError(error.message)
+        setError(error.message);
       } else {
-        router.push('/details') // Redirect to the details page on successful sign-in
+        router.push('/details');
       }
     }
-
-    setIsLoading(false)
+  
+    setIsLoading(false);
   }
+  
 
   return (
     <div className={cn("grid gap-6", className)} {...props}>
       <form onSubmit={onSubmit}>
         {error && <p className="text-red-500">{error}</p>}
         <div className="grid gap-2">
+          {isSignUp && (
+            <div className="grid gap-1">
+              <Label className="sr-only" htmlFor="username">
+                Username
+              </Label>
+              <Input
+                id="username"
+                placeholder="Username"
+                type="text"
+                disabled={isLoading}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </div>
+          )}
           <div className="grid gap-1">
             <Label className="sr-only" htmlFor="email">
               Email
@@ -127,5 +157,5 @@ export function UserAuthForm({ className, isSignUp, setIsSignUp, ...props }: Use
         </p>
       </div>
     </div>
-  )
+  );
 }
