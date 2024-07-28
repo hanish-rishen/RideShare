@@ -24,6 +24,9 @@ Imagine Rahul and Mukesh, both living in Abode Valley but with opposite schedule
 - **Backend**: Supabase
 - **Map**: MapLibre, OpenStreetMaps (for open-source mapping)
 
+## Demo Video
+https://youtu.be/2pcLNWDpyAU?si=aZ6aZdfcd6rmk8Fq
+
 ## Setup Instructions
 
 ### Prerequisites
