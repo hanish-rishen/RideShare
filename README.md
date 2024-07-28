@@ -2,7 +2,7 @@
 
 Welcome to RideShare! This project aims to foster a community of students and office workers who share rides within and around a university campus or workplace. By leveraging Supabase for backend services, Next.js for the frontend, and other open-source tools, RideShare provides a platform for users to offer or request rides, significantly reducing travel expenses and environmental impact.
 
-## Pitch
+## Use-Cases
 ## Scenario 1: Transit between Office and Housing Soceity
 Raj and Neha both live in Green Meadows and work at Tech Park.
 Raj's shift starts at 9 AM, and Neha's ends at 9 AM. Every day, they awkwardly wave at each other as they pass by, thinking, "Why am I paying for a full ride when we could just share?"
