@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -139,7 +139,7 @@ export function Details() {
     }
   };
 
-  const findMatches = () => {
+  const findMatches = useCallback(() => {
     if (!user) return;
 
     const R = 6371; // Radius of the Earth in kilometers
@@ -192,7 +192,7 @@ export function Details() {
     } else {
       setMatches([]);
     }
-  };
+  }, [locations, users, user]);
 
   const updateRecentLocations = (location: string) => {
     setRecentLocations(prevLocations => {
@@ -213,7 +213,7 @@ export function Details() {
     if (!showForm) {
       findMatches();
     }
-  }, [locations, users, showForm]);
+  }, [locations, users, showForm, findMatches]);
 
   const handleCopyPhoneNumber = (phoneNumber: string) => {
     navigator.clipboard.writeText(phoneNumber);
@@ -237,105 +237,115 @@ export function Details() {
             <CardContent className="flex-grow">
               <AnimatePresence>
                 {showForm ? (
-                  <motion.form
+                  <motion.div
                     key="form"
-                    onSubmit={handleSubmit}
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="space-y-4"
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
                   >
-                    <div className="space-y-1">
-                      <Label htmlFor="startLocation">Start Location</Label>
-                      <select
-                        id="startLocation"
-                        value={startLocation}
-                        onChange={(e) => setStartLocation(e.target.value)}
-                        className="w-full border rounded-md p-2"
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                      <div>
+                        <Label htmlFor="startLocation">Start Location</Label>
+                        <Input
+                          id="startLocation"
+                          type="text"
+                          placeholder="Enter start location"
+                          value={startLocation}
+                          onChange={(e) => setStartLocation(e.target.value)}
+                          required
+                          list="recentLocations"
+                        />
+                        <datalist id="recentLocations">
+                          {recentLocations.map((loc, index) => (
+                            <option key={index} value={loc} />
+                          ))}
+                        </datalist>
+                      </div>
+                      <div>
+                        <Label htmlFor="endLocation">End Location</Label>
+                        <Input
+                          id="endLocation"
+                          type="text"
+                          placeholder="Enter end location"
+                          value={endLocation}
+                          onChange={(e) => setEndLocation(e.target.value)}
+                          required
+                          list="recentLocations"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="phoneNumber">Phone Number</Label>
+                        <Input
+                          id="phoneNumber"
+                          type="text"
+                          placeholder="Enter your phone number"
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <Button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-blue-500 text-white py-2 px-4 rounded-md"
                       >
-                        <option value="">Select a start location</option>
-                        <option value="Techpark">Techpark</option>
-                        <option value="Abode">Abode</option>
-                      </select>
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="endLocation">End Location</Label>
-                      <select
-                        id="endLocation"
-                        value={endLocation}
-                        onChange={(e) => setEndLocation(e.target.value)}
-                        className="w-full border rounded-md p-2"
-                      >
-                        <option value="">Select an end location</option>
-                        <option value="Techpark">Techpark</option>
-                        <option value="Abode">Abode</option>
-                      </select>
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="phoneNumber">Phone Number</Label>
-                      <Input
-                        id="phoneNumber"
-                        type="text"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                      />
-                    </div>
-                    <Button
-                      type="submit"
-                      disabled={loading}
-                      className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600"
-                    >
-                      {loading ? 'Loading...' : 'Find Ride'}
-                    </Button>
-                  </motion.form>
+                        {loading ? 'Finding ride...' : 'Find Ride'}
+                      </Button>
+                    </form>
+                  </motion.div>
                 ) : (
                   <motion.div
-                    key="matches"
-                    initial={{ opacity: 0, y: 10 }}
+                    key="nearby"
+                    initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
                   >
-                    {matches.length > 0 ? (
-                      matches.map(match => (
-                        <div key={match.user_id} className="space-y-2">
-                          <div className="font-bold text-lg">{match.username}</div>
-                          <div>Phone Number: {match.phone_number}</div>
-                          <div>
-                            Distance: {match.distance.toFixed(2)} km
+                    <div className="space-y-4">
+                      {matches.length > 0 ? (
+                        matches.map((match, index) => (
+                          <div key={index} className="border p-4 rounded-md flex justify-between items-center">
+                            <div>
+                              <h3 className="text-lg font-semibold">{match.username}</h3>
+                              <p className="text-gray-600">{match.phone_number}</p>
+                            </div>
+                            <button
+                              className="p-2 text-blue-500 hover:text-blue-600"
+                              onClick={() => handleCopyPhoneNumber(match.phone_number)}
+                            >
+                              {isCopied ? (
+                                <span>Copied</span>
+                              ) : (
+                                <FaCopy />
+                              )}
+                            </button>
                           </div>
-                          <Button
-                            onClick={() => handleCopyPhoneNumber(match.phone_number)}
-                            className="flex items-center space-x-2"
-                          >
-                            <FaCopy />
-                            <span>Copy Phone Number</span>
-                          </Button>
-                          {isCopied && <span className="text-green-500">Copied!</span>}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-gray-500">No matches found.</div>
-                    )}
+                        ))
+                      ) : (
+                        <p className="text-gray-600">No nearby users found.</p>
+                      )}
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
             </CardContent>
-          </div>
-          <div className="mt-4 flex flex-col space-y-2">
-            {!showForm && (
+            <div className="flex space-x-4">
+              {!showForm && (
+                <Button
+                  onClick={handleNewRide}
+                  className="w-full bg-blue-500 text-white py-2 px-4 rounded-md"
+                >
+                  Enter New Ride
+                </Button>
+              )}
               <Button
-                onClick={handleNewRide}
-                className="bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600"
+                onClick={handleLogout}
+                className="w-full bg-red-500 text-white py-2 px-4 rounded-md"
               >
-                Add New Ride
+                Logout
               </Button>
-            )}
-            <Button
-              onClick={handleLogout}
-              className="bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600"
-            >
-              Logout
-            </Button>
+            </div>
           </div>
         </div>
       </Card>
