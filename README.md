@@ -43,25 +43,25 @@ cd rideshare
 
 ### Step 2: Install Dependencies
 
-# Using npm
+## Using npm
 ```
 npm install
 ```
 
-# Or using yarn
+## Or using yarn
 ```
 yarn install
 ```
 
 ### Step 3: Configure Environment Variables
-## Create a .env.local file in the root directory and add the following variables:
+### Create a .env.local file in the root directory and add the following variables:
 ```
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 NEXT_PUBLIC_MAPLIBRE_KEY=your_maplibre_key
 ```
 
-## Replace your_supabase_url, your_supabase_anon_key, and your_maplibre_key with your actual Supabase and MapLibre credentials.
+### Replace your_supabase_url, your_supabase_anon_key, and your_maplibre_key with your actual Supabase and MapLibre credentials.
 ### Step 4: Run the Application
 ### Using npm
 ```
@@ -73,12 +73,12 @@ npm run dev
 yarn dev
 ```
 
-## The application should now be running on http://localhost:3000.
+### The application should now be running on http://localhost:3000.
 
-### License
-## This project is open-source and available under the MIT License.
+### License:
+### This project is open-source and available under the MIT License.
 
-## Thank you for using RideShare – Sharing rides, saving costs, and building a community.
+### Thank you for using RideShare – Sharing rides, saving costs, and building a community.
 
 
 
