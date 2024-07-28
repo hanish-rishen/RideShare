@@ -1,0 +1,32 @@
+Privacy Policy
+Effective Date: [Insert Date]
+
+RideShare is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our application. Please read this policy carefully to understand our views and practices regarding your personal data and how we will treat it.
+
+1. Information We Collect
+We may collect and process the following data about you:
+
+Personal Identification Information: Name, email address, phone number.
+Usage Data: Information about your interactions with our application, such as the features you use and the time spent on the application.
+Location Data: Information about your location, including the real-time geographic location of your device if you have enabled location services.
+2. How We Use Your Information
+We use the information we collect in the following ways:
+
+To Provide and Maintain Our Service: Including monitoring the usage of our service and improving our features.
+To Manage Your Account: To manage your registration as a user of the service.
+To Contact You: To contact you by email, phone calls, SMS, or other equivalent forms of electronic communication.
+To Improve Our Service: By understanding how our application is used and making improvements.
+3. Sharing Your Information
+We do not share or sell your personal information to third parties. We may share your information only in the following situations:
+
+With Service Providers: To monitor and analyze the use of our service, to contact you.
+For Legal Reasons: If required to do so by law or in response to valid requests by public authorities.
+4. Security of Your Information
+We use administrative, technical, and physical security measures to help protect your personal information. While we have taken reasonable steps to secure the personal information you provide to us, please be aware that despite our efforts, no security measures are perfect or impenetrable.
+
+5. Your Data Protection Rights
+Depending on your location, you may have the following rights regarding your personal information:
+
+Access: The right to request copies of your personal data.
+Rectification: The right to request that we correct any information you believe is inaccurate.
+Erasure: The right to request that we erase your personal data, under certain conditions.
