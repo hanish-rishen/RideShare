@@ -30,32 +30,43 @@ Imagine Rahul and Mukesh, both living in Abode Valley but with opposite schedule
 
 ### Step 1: Clone the Repository
 
-
+```
 git clone https://github.com/yourusername/rideshare.git
 cd rideshare
+```
 
 
 ### Step 2: Install Dependencies
 
 # Using npm
+```
 npm install
+```
 
 # Or using yarn
+```
 yarn install
+```
 
 ### Step 3: Configure Environment Variables
 ## Create a .env.local file in the root directory and add the following variables:
+```
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 NEXT_PUBLIC_MAPLIBRE_KEY=your_maplibre_key
+```
 
 ## Replace your_supabase_url, your_supabase_anon_key, and your_maplibre_key with your actual Supabase and MapLibre credentials.
 ### Step 4: Run the Application
-#@ Using npm
+### Using npm
+```
 npm run dev
+```
 
-#@ Or using yarn
+### Or using yarn
+```
 yarn dev
+```
 
 ## The application should now be running on http://localhost:3000.
 
