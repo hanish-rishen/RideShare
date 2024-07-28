@@ -17,12 +17,11 @@ export function Details() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [locations, setLocations] = useState<{ latitude: number; longitude: number; user_id: string; phone_number: string }[]>([]);
+  const [locations, setLocations] = useState<{ latitude: number; longitude: number; user_id: string; phone_number: string; start_location: string; end_location: string }[]>([]);
   const [users, setUsers] = useState<{ user_id: string; username: string }[]>([]);
   const [matches, setMatches] = useState<{ user_id: string; latitude: number; longitude: number; phone_number: string; username: string; distance: number }[]>([]);
   const [showForm, setShowForm] = useState(true);
   const [recentLocations, setRecentLocations] = useState<string[]>([]);
-  const [filteredLocations, setFilteredLocations] = useState<string[]>([]);
   const [isCopied, setIsCopied] = useState(false);
   const { user } = useUser();
   const router = useRouter();
@@ -94,7 +93,7 @@ export function Details() {
     try {
       const { data: locationsData, error: locationsError } = await supabase
         .from('rideshare')
-        .select('latitude, longitude, user_id, phone_number, start_time')
+        .select('latitude, longitude, user_id, phone_number, start_location, end_location, start_time')
         .order('start_time', { ascending: false });
 
       if (locationsError) {
@@ -125,6 +124,21 @@ export function Details() {
     }
   };
 
+  const deleteMatchedPairs = async (user_ids: string[]) => {
+    try {
+      const { error } = await supabase
+        .from('rideshare')
+        .delete()
+        .in('user_id', user_ids);
+
+      if (error) {
+        console.error("Error deleting matched pairs:", error.message);
+      }
+    } catch (error) {
+      console.error("Error deleting matched pairs:", (error as Error).message);
+    }
+  };
+
   const findMatches = () => {
     if (!user) return;
 
@@ -147,7 +161,7 @@ export function Details() {
 
     if (!currentUserLocation) return;
 
-    const { latitude, longitude } = currentUserLocation;
+    const { latitude, longitude, start_location: currentUserStartLocation, end_location: currentUserEndLocation } = currentUserLocation;
 
     const nearbyUsers = locations
       .filter(location => location.user_id !== user.id)
@@ -158,7 +172,7 @@ export function Details() {
           distance: distance
         };
       })
-      .filter(user => user.distance <= thresholdDistance);
+      .filter(user => user.distance <= thresholdDistance && user.start_location === currentUserEndLocation);
 
     const matchesWithUsernames = nearbyUsers.map(user => {
       const matchedUser = users.find(u => u.user_id === user.user_id);
@@ -173,6 +187,7 @@ export function Details() {
         return user.distance < nearest.distance ? user : nearest;
       }, matchesWithUsernames[0]);
 
+      deleteMatchedPairs([user.id, nearestUser.user_id]); // Delete both current user and matched user
       setMatches([nearestUser]);
     } else {
       setMatches([]);
@@ -187,28 +202,6 @@ export function Details() {
     });
   };
 
-  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>, setLocation: React.Dispatch<React.SetStateAction<string>>) => {
-    const value = e.target.value;
-    setLocation(value);
-    setFilteredLocations(recentLocations.filter(loc => loc.toLowerCase().includes(value.toLowerCase())));
-  };
-
-  const handleSuggestionClick = (suggestion: string, setLocation: React.Dispatch<React.SetStateAction<string>>) => {
-    setLocation(suggestion);
-    setFilteredLocations([]);
-  };
-
-  const handleCopyPhoneNumber = (phone: string) => {
-    navigator.clipboard.writeText(phone)
-      .then(() => {
-        setIsCopied(true);
-        setTimeout(() => setIsCopied(false), 2000); // Reset copy status after 2 seconds
-      })
-      .catch((error) => {
-        console.error("Failed to copy text:", error);
-      });
-  };
-
   useEffect(() => {
     if (!showForm) {
       fetchLocations();
@@ -221,6 +214,12 @@ export function Details() {
       findMatches();
     }
   }, [locations, users, showForm]);
+
+  const handleCopyPhoneNumber = (phoneNumber: string) => {
+    navigator.clipboard.writeText(phoneNumber);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
 
   return (
     <div className="relative flex items-center justify-center h-screen w-screen px-4 bg-gray-100">
@@ -247,87 +246,45 @@ export function Details() {
                     className="space-y-4"
                   >
                     <div className="space-y-1">
-                      
                       <Label htmlFor="startLocation">Start Location</Label>
-                      <Input
+                      <select
                         id="startLocation"
                         value={startLocation}
-                        onChange={(e) => handleLocationChange(e, setStartLocation)}
-                        className="w-full"
-                        list="recent-start-locations"
-                      />
-                      <datalist id="recent-start-locations">
-                        {filteredLocations.map((loc, index) => (
-                          <option key={index} value={loc} />
-                        ))}
-                      </datalist>
-                      <AnimatePresence>
-                        {filteredLocations.length > 0 && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="mt-2 bg-white border border-gray-200 rounded-md shadow-lg"
-                          >
-                            {filteredLocations.map((loc, index) => (
-                              <div
-                                key={index}
-                                onClick={() => handleSuggestionClick(loc, setStartLocation)}
-                                className="p-2 cursor-pointer hover:bg-gray-100"
-                              >
-                                {loc}
-                              </div>
-                            ))}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                        onChange={(e) => setStartLocation(e.target.value)}
+                        className="w-full border rounded-md p-2"
+                      >
+                        <option value="">Select a start location</option>
+                        <option value="Techpark">Techpark</option>
+                        <option value="Abode">Abode</option>
+                      </select>
                     </div>
                     <div className="space-y-1">
                       <Label htmlFor="endLocation">End Location</Label>
-                      <Input
+                      <select
                         id="endLocation"
                         value={endLocation}
-                        onChange={(e) => handleLocationChange(e, setEndLocation)}
-                        className="w-full"
-                        list="recent-end-locations"
-                      />
-                      <datalist id="recent-end-locations">
-                        {filteredLocations.map((loc, index) => (
-                          <option key={index} value={loc} />
-                        ))}
-                      </datalist>
-                      <AnimatePresence>
-                        {filteredLocations.length > 0 && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            className="mt-2 bg-white border border-gray-200 rounded-md shadow-lg"
-                          >
-                            {filteredLocations.map((loc, index) => (
-                              <div
-                                key={index}
-                                onClick={() => handleSuggestionClick(loc, setEndLocation)}
-                                className="p-2 cursor-pointer hover:bg-gray-100"
-                              >
-                                {loc}
-                              </div>
-                            ))}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                        onChange={(e) => setEndLocation(e.target.value)}
+                        className="w-full border rounded-md p-2"
+                      >
+                        <option value="">Select an end location</option>
+                        <option value="Techpark">Techpark</option>
+                        <option value="Abode">Abode</option>
+                      </select>
                     </div>
                     <div className="space-y-1">
                       <Label htmlFor="phoneNumber">Phone Number</Label>
                       <Input
                         id="phoneNumber"
+                        type="text"
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
-                        className="w-full"
                       />
                     </div>
-                    {error && <p className="text-red-500">{error}</p>}
-                    <Button type="submit" className="w-full bg-blue-600 text-white py-2 mt-4" disabled={loading}>
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600"
+                    >
                       {loading ? 'Loading...' : 'Find Ride'}
                     </Button>
                   </motion.form>
@@ -337,42 +294,49 @@ export function Details() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="space-y-4"
                   >
                     {matches.length > 0 ? (
-                      <div className="space-y-2">
-                        <p>Here are the nearby users:</p>
-                        {matches.map((match, index) => (
-                          <div key={index} className="flex items-center justify-between p-2 border border-gray-200 rounded-md">
-                            <div>
-                              <p className="font-bold">{match.username}</p>
-                              <p className="text-sm text-gray-600">{match.phone_number}</p>
-                            </div>
-                            <Button
-                              variant="secondary"
-                              onClick={() => handleCopyPhoneNumber(match.phone_number)}
-                              className="flex items-center"
-                            >
-                              <FaCopy className="mr-1" />
-                              {isCopied ? 'Copied!' : 'Copy'}
-                            </Button>
+                      matches.map(match => (
+                        <div key={match.user_id} className="space-y-2">
+                          <div className="font-bold text-lg">{match.username}</div>
+                          <div>Phone Number: {match.phone_number}</div>
+                          <div>
+                            Distance: {match.distance.toFixed(2)} km
                           </div>
-                        ))}
-                      </div>
+                          <Button
+                            onClick={() => handleCopyPhoneNumber(match.phone_number)}
+                            className="flex items-center space-x-2"
+                          >
+                            <FaCopy />
+                            <span>Copy Phone Number</span>
+                          </Button>
+                          {isCopied && <span className="text-green-500">Copied!</span>}
+                        </div>
+                      ))
                     ) : (
-                      <p>No matches found within 5 kilometers.</p>
+                      <div className="text-gray-500">No matches found.</div>
                     )}
-                    <Button onClick={handleNewRide} className="w-full bg-blue-600 text-white py-2 mt-4">
-                      New Ride
-                    </Button>
                   </motion.div>
                 )}
               </AnimatePresence>
             </CardContent>
           </div>
-          <Button onClick={handleLogout} variant="outline" className="mt-4">
-            Logout
-          </Button>
+          <div className="mt-4 flex flex-col space-y-2">
+            {!showForm && (
+              <Button
+                onClick={handleNewRide}
+                className="bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600"
+              >
+                Add New Ride
+              </Button>
+            )}
+            <Button
+              onClick={handleLogout}
+              className="bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600"
+            >
+              Logout
+            </Button>
+          </div>
         </div>
       </Card>
     </div>
