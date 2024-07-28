@@ -63,14 +63,14 @@ export default function AuthenticationPage() {
             <p className="px-8 text-center text-sm text-muted-foreground">
               By clicking continue, you agree to our{" "}
               <Link
-                href="/terms"
+                href="https://github.com/hanish-rishen/RideShare/blob/main/tearms-of-service.txt"
                 className="underline underline-offset-4 hover:text-primary"
               >
                 Terms of Service
               </Link>{" "}
               and{" "}
               <Link
-                href="/privacy"
+                href="https://github.com/hanish-rishen/RideShare/blob/main/privacy-policy.txt"
                 className="underline underline-offset-4 hover:text-primary"
               >
                 Privacy Policy
